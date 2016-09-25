@@ -1,87 +1,94 @@
-//
-//  ViewController.swift
-//
-//  Copyright 2011-present Parse Inc. All rights reserved.
-//
+/**
+* Copyright (c) 2015-present, Parse, LLC.
+* All rights reserved.
+*
+* This source code is licensed under the BSD-style license found in the
+* LICENSE file in the root directory of this source tree. An additional grant
+* of patent rights can be found in the PATENTS file in the same directory.
+*/
 
 import UIKit
 import Parse
 
 class ViewController: UIViewController {
 
-    @IBOutlet var username: UITextField!
+   
+    @IBOutlet var usernameTextField: UITextField!
     
-    @IBOutlet var errorLabel: UILabel!
     
-    @IBAction func signUp(sender: AnyObject) {
+    @IBAction func signupOrLogin(_ sender: AnyObject) {
         
-        PFUser.logInWithUsernameInBackground(username.text!, password:"password") {
+        if usernameTextField.text == "" {
             
-            (user: PFUser?, error: NSError?) -> Void in
+            errorLabel.text = "A username is required"
             
-            if let error = error {
+        } else {
+            
+            PFUser.logInWithUsername(inBackground: usernameTextField.text!, password: "password", block: { (user, error) in
                 
-                var user = PFUser()
-                user.username = self.username.text!
-                user.password = "password"
-                
-                user.signUpInBackgroundWithBlock {
-                    (succeeded, error) -> Void in
+                if error != nil {
                     
-                    if let error = error {
-                        
-                        let errorString = error.userInfo["error"]! as! String
-                        
-                        self.errorLabel.text = "Error: " + errorString
-                        
-                    } else {
-                        
-                        print("Signed Up")
-                        self.performSegueWithIdentifier("ShowUserTable", sender: self)
-                        
-                    }
+                    let user = PFUser()
                     
+                    user.username = self.usernameTextField.text
+                    user.password = "password"
+                    
+                    user.signUpInBackground(block: { (success, error) in
+                        
+                        if let error = error as? NSError {
+                            
+                            var errorMessage = "Signup failed - please try again later"
+                            
+                            if let errorString = error.userInfo["error"] as? String {
+                                
+                                errorMessage = errorString
+                                
+                            }
+                            
+                            self.errorLabel.text = errorMessage
+                            
+                        } else {
+                            
+                            self.performSegue(withIdentifier: "showUserTable", sender: self)
+                            
+                        }
+                        
+                        
+                    })
+                    
+                    
+                    
+                } else {
+                    
+                    print ("Logged In")
+                    
+                    self.performSegue(withIdentifier: "showUserTable", sender: self)
                     
                 }
                 
-            } else {
                 
-                print("Logged In")
-                self.performSegueWithIdentifier("ShowUserTable", sender: self)
-            }
-            
-            
-        }
-        
-        
-        
-        
-        
-    }
-    
-    override func viewWillAppear(animated: Bool) {
-        
-        self.navigationController?.navigationBar.hidden = true
-        
-    }
-    
-    
-    override func viewDidAppear(animated: Bool) {
-        
-        if PFUser.currentUser()?.username != nil {
-            
-            self.performSegueWithIdentifier("ShowUserTable", sender: self)
+            })
             
         }
         
     }
     
+    @IBOutlet var errorLabel: UILabel!
+    
+    override func viewDidAppear(_ animated: Bool) {
+        
+        if PFUser.current() != nil {
+            
+            performSegue(withIdentifier: "showUserTable", sender: self)
+            
+            
+        }
+        
+    }
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        
-        
-        
+              
     }
 
     override func didReceiveMemoryWarning() {
@@ -89,4 +96,3 @@ class ViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
 }
-
